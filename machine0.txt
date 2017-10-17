@@ -11,7 +11,7 @@ invariants
  @inv5 muted ∈ user ↔ user // muted sessions
  @inv6 active ⊆ chat // active chat sessions
  @inv7 muted ⊆ chat // muted chat sessions
- @inv8 chatcontent ∈ user ⇸ ℙ(content → ℙ(user))      // users' chat content
+ @inv8 chatcontent ∈ user ⇸ (content → ℙ(user))      // users' chat content
 
 events
   event INITIALISATION
@@ -117,27 +117,33 @@ events
   any u1 uu c
   where
     @grd1 u1 ∈ user
-    @grd2 uu ⊆ user
-    @grd3 uu ≠ ∅
-    @grd4 c ∈(CONTENT ∖ content)
+	@grd2 u1 ∈ dom(chatcontent)
+	@grd3 uu ⊆ user
+	@grd4 uu ⊆ chat[{u1}]
+	@grd5 (uu × {u1}) ∩ muted = ∅
+	@grd6 ({u1} × uu) ∩ muted = ∅
+	@grd7 c ∈ CONTENT ∖ content
+	@grd8 c ∈ dom(chatcontent(u1))
   then
-    @act1 content ≔  content ∪ {c}
-    @act2 chat ≔ chat ∪ (({u1} × uu) ∖ (({u1}◁ chat) ▷  uu))
-    //@act3 chatcontent ≔ chatcontent ∪ ({u1} × ({c} × uu))
-    @act3 chatcontent(u1) ≔ chatcontent(u1) ∪  {{c} ×  {uu}} /// 
+    @act1 chat ≔  chat ∪({u1} × uu)
+    @act2 content ≔ content ∪ {c}
+    @act3 chatcontent(u1) ≔  chatcontent(u1)  {c ↦ (uu ∪ chatcontent(u1)(c))}
   end
 
   event forward // US-09
   any u1 uu c
   where
     @grd1 u1 ∈ user
-    @grd2 uu ⊆ user
-    @grd3 {u1} × {uu} ⊆ chat
-    @grd4 c ∈ content
+	@grd2 u1 ∈ dom(chatcontent)
+	@grd3 uu ⊆ user
+	@grd4 uu ⊆ chat[{u1}]
+	@grd5 (uu × {u1}) ∩ muted = ∅
+	@grd6 ({u1} × uu) ∩ muted = ∅
+	@grd7 c ∈ content
+	@grd8 c ∈ dom(chatcontent(u1))
   then
-    @act1 chatcontent(u1) ≔  ran ({u1} ◁ chatcontent) ∪ {{c} × uu}
-    //@act1 chatcontent ≔  chatcontent ∪  {u1 ↦ (dom(chatcontent(u1)) ↦    uu)}
-
+    @act1 chat ≔  chat ∪({u1} × uu)
+    @act2 chatcontent(u1) ≔  chatcontent(u1)  {c ↦ (uu ∪ chatcontent(u1)(c))}
   end
 
   event unselect_chat // US-10
@@ -150,6 +156,17 @@ events
     @act1 active ≔ active ∖  {u1 ↦ u2}
   end
 
-  event remove_content // US-04
+  event remove_content // US-04b
+  any u1 u2 c
+  where
+    @grd1 u1 ∈ user ∧ u2 ∈ user
+    @grd2 u1 ↦ u2 ∈ chat
+    @grd3 u1 ↦ u2 ∈ active
+    @grd4 c ∈ content
+    @grd6 (u1↦ {c ↦ {u2}}) ∈ chatcontent
+    @grd7 u1 ∈ dom(chatcontent)
+    @grd8 c ∈ dom(chatcontent(u1))
+  then
+    @act1 chatcontent(u1) ≔ chatcontent(u1)  {c ↦ (chatcontent(u1)(c)∖{u1})}
   end
 end
